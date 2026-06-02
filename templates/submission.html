@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Submission Review</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 24px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #cccccc;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background: #eeeeee;
+        }
+
+        .compliant {
+            background: #e9f8ec;
+        }
+
+        .flagged {
+            background: #fff4d6;
+        }
+
+        .rejected {
+            background: #ffdede;
+        }
+
+        .needs_human_review {
+            background: #eeeeff;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Submission Review</h1>
+
+    <p>
+        <a href="/">Back to Dashboard</a>
+    </p>
+
+    {% if employee %}
+        <h2>{{ employee.employee_name }}</h2>
+
+        <p>
+            <strong>Grade:</strong> {{ employee.employee_grade }}<br>
+            <strong>Department:</strong> {{ employee.department }}<br>
+            <strong>Manager:</strong> {{ employee.manager }}<br>
+            <strong>Trip Purpose:</strong> {{ employee.trip_purpose }}<br>
+            <strong>Trip Dates:</strong> {{ employee.trip_start_date }} to {{ employee.trip_end_date }}
+        </p>
+    {% endif %}
+
+    <hr>
+
+    <h2>Upload Receipts</h2>
+
+    <form
+        action="/submissions/{{ submission.id }}/upload"
+        method="post"
+        enctype="multipart/form-data"
+    >
+        <input
+            type="file"
+            name="files"
+            multiple
+            accept=".pdf,.txt,.jpg,.jpeg,.png"
+            required
+        >
+
+        <br><br>
+
+        <button type="submit">
+            Upload and Review
+        </button>
+    </form>
+
+    <hr>
+
+    <h2>Receipt Review Results</h2>
+
+    {% if receipts %}
+        <table>
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Vendor</th>
+                    <th>Amount</th>
+                    <th>Category</th>
+                    <th>Verdict</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for receipt in receipts %}
+                    <tr class="{{ receipt.verdict }}">
+                        <td>{{ receipt.filename }}</td>
+                        <td>{{ receipt.vendor }}</td>
+
+                        <td>
+                            {% if receipt.amount %}
+                                ${{ "%.2f"|format(receipt.amount) }}
+                            {% else %}
+                                Not found
+                            {% endif %}
+                        </td>
+
+                        <td>{{ receipt.category }}</td>
+                        <td><strong>{{ receipt.verdict }}</strong></td>
+                        <td>{{ receipt.reason }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No receipts uploaded yet.</p>
+    {% endif %}
+
+</body>
+</html>

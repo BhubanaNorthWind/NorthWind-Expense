@@ -254,3 +254,16 @@ def create_override(
 
     conn.commit()
     conn.close()
+
+def get_employee(employee_id):
+    conn = get_connection()
+
+    row = conn.execute("""
+    SELECT *
+    FROM employees
+    WHERE id = ?
+    """, (employee_id,)).fetchone()
+
+    conn.close()
+
+    return row

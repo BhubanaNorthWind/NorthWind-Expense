@@ -24,6 +24,9 @@
                 Manager: {{ employee.manager }}<br>
                 Trip: {{ employee.trip_purpose }}<br>
                 Dates: {{ employee.trip_start_date }} to {{ employee.trip_end_date }}
+                <a href="/employee/{{ employee.id }}/submission">
+                        Start Submission / Upload Receipts
+                </a>
             </div>
             <hr>
         {% endfor %}

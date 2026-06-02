@@ -1,11 +1,21 @@
+from typing import List
 from fastapi import FastAPI
 from app.db import init_db
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request, Form, UploadFile, File
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from app.seed_data import seed_employees
+from app.receipt import save_uploaded_receipt, analyze_receipt
 
-from app.db import init_db, create_employee, get_all_employees
+from app.db import (
+    init_db,
+    create_employee,
+    get_all_employees,
+    get_employee,
+    create_submission,
+    get_submission,
+    save_receipt,
+)
 
 app = FastAPI(title="Northwind Expense Pre-Review")
 
@@ -62,5 +72,93 @@ def save_employee(
 
     return RedirectResponse(
         "/",
+        status_code=303
+    )
+
+@app.get("/employee/{employee_id}/submission")
+def start_submission(employee_id: int):
+    employee = get_employee(employee_id)
+
+    if employee is None:
+        return RedirectResponse(
+            "/",
+            status_code=303
+        )
+
+    submission_id = create_submission(employee_id)
+
+    return RedirectResponse(
+        f"/submissions/{submission_id}",
+        status_code=303
+    )
+
+@app.get("/submissions/{submission_id}")
+def submission_detail(request: Request, submission_id: int):
+    submission, receipts = get_submission(submission_id)
+
+    if submission is None:
+        return RedirectResponse(
+            "/",
+            status_code=303
+        )
+
+    employee = get_employee(submission["employee_id"])
+
+    return templates.TemplateResponse(
+        request=request,
+        name="submission.html",
+        context={
+            "submission": submission,
+            "employee": employee,
+            "receipts": receipts
+        }
+    )
+@app.post("/submissions/{submission_id}/upload")
+def upload_receipts(
+    submission_id: int,
+    files: List[UploadFile] = File(...)
+):
+    submission, _ = get_submission(submission_id)
+
+    if submission is None:
+        return RedirectResponse(
+            "/",
+            status_code=303
+        )
+
+    for uploaded_file in files:
+        try:
+            file_path = save_uploaded_receipt(
+                uploaded_file,
+                submission_id
+            )
+
+            result = analyze_receipt(file_path)
+
+            save_receipt(
+                submission_id=submission_id,
+                filename=uploaded_file.filename,
+                file_path=str(file_path),
+                vendor=result.get("vendor"),
+                amount=result.get("amount"),
+                category=result.get("category"),
+                verdict=result.get("verdict"),
+                reason=result.get("reason")
+            )
+
+        except Exception as error:
+            save_receipt(
+                submission_id=submission_id,
+                filename=uploaded_file.filename or "unknown_file",
+                file_path="",
+                vendor="Upload error",
+                amount=None,
+                category="unknown",
+                verdict="needs_human_review",
+                reason=f"Upload or receipt analysis failed: {error}"
+            )
+
+    return RedirectResponse(
+        f"/submissions/{submission_id}",
         status_code=303
     )

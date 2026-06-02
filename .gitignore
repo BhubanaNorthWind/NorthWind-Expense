@@ -1,0 +1,19 @@
+# Virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local database
+expense_app.db
+
+# Environment variables
+.env
+
+# VS Code settings (optional)
+.vscode/
+
+# Uploaded files
+uploads/*
+!uploads/.gitkeep

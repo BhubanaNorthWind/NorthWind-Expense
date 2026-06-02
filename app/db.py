@@ -267,3 +267,23 @@ def get_employee(employee_id):
     conn.close()
 
     return row
+def get_overrides_for_submission(submission_id):
+    conn = get_connection()
+
+    rows = conn.execute("""
+    SELECT 
+        overrides.id,
+        overrides.receipt_id,
+        overrides.old_verdict,
+        overrides.new_verdict,
+        overrides.comment,
+        overrides.created_at
+    FROM overrides
+    JOIN receipts ON receipts.id = overrides.receipt_id
+    WHERE receipts.submission_id = ?
+    ORDER BY overrides.created_at ASC
+    """, (submission_id,)).fetchall()
+
+    conn.close()
+
+    return rows

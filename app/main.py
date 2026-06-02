@@ -15,6 +15,9 @@ from app.db import (
     create_submission,
     get_submission,
     save_receipt,
+    get_receipt,
+    create_override,
+    get_overrides_for_submission,
 )
 
 app = FastAPI(title="Northwind Expense Pre-Review")
@@ -103,6 +106,16 @@ def submission_detail(request: Request, submission_id: int):
         )
 
     employee = get_employee(submission["employee_id"])
+    overrides = get_overrides_for_submission(submission_id)
+    overrides_by_receipt = {}
+
+    for override in overrides:
+        receipt_id = override["receipt_id"]
+
+        if receipt_id not in overrides_by_receipt:
+            overrides_by_receipt[receipt_id] = []
+
+        overrides_by_receipt[receipt_id].append(override)
 
     return templates.TemplateResponse(
         request=request,
@@ -110,7 +123,8 @@ def submission_detail(request: Request, submission_id: int):
         context={
             "submission": submission,
             "employee": employee,
-            "receipts": receipts
+            "receipts": receipts,
+            "overrides_by_receipt": overrides_by_receipt
         }
     )
 @app.post("/submissions/{submission_id}/upload")
@@ -160,5 +174,32 @@ def upload_receipts(
 
     return RedirectResponse(
         f"/submissions/{submission_id}",
+        status_code=303
+    )
+@app.post("/receipts/{receipt_id}/override")
+def override_receipt(
+    receipt_id: int,
+    new_verdict: str = Form(...),
+    comment: str = Form(...)
+):
+    receipt = get_receipt(receipt_id)
+
+    if receipt is None:
+        return RedirectResponse(
+            "/",
+            status_code=303
+        )
+
+    old_verdict = receipt["verdict"]
+
+    create_override(
+        receipt_id=receipt_id,
+        old_verdict=old_verdict,
+        new_verdict=new_verdict,
+        comment=comment
+    )
+
+    return RedirectResponse(
+        f"/submissions/{receipt['submission_id']}",
         status_code=303
     )

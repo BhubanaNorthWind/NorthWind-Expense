@@ -22,9 +22,9 @@ def dashboard(request: Request):
     employees = get_all_employees()
 
     return templates.TemplateResponse(
-        "dashboard.html",
-        {
-            "request": request,
+        request=request,
+        name="dashboard.html",
+        context={
             "employees": employees
         }
     )
@@ -32,8 +32,9 @@ def dashboard(request: Request):
 @app.get("/new")
 def new_employee(request: Request):
     return templates.TemplateResponse(
-        "new.html",
-        {"request": request}
+        request=request,
+        name="new.html",
+        context={}
     )
 
 @app.post("/new")

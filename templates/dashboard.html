@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Northwind Expense Review</title>
+</head>
+<body>
+
+    <h1>Northwind Expense Review</h1>
+
+    <p>Employee list and submission history will appear here.</p>
+
+    <a href="/new">Create New Employee / Submission</a>
+
+    <hr>
+
+    <h2>Employees</h2>
+
+    {% if employees %}
+        {% for employee in employees %}
+            <div>
+                <strong>{{ employee.employee_name }}</strong><br>
+                Grade: {{ employee.employee_grade }}<br>
+                Department: {{ employee.department }}<br>
+                Manager: {{ employee.manager }}<br>
+                Trip: {{ employee.trip_purpose }}<br>
+                Dates: {{ employee.trip_start_date }} to {{ employee.trip_end_date }}
+            </div>
+            <hr>
+        {% endfor %}
+    {% else %}
+        <p>No employees yet. Click "Create New Employee / Submission".</p>
+    {% endif %}
+
+</body>
+</html>

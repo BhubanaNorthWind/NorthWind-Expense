@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Policy Q&A</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 24px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 80px;
+        }
+
+        .answer-box {
+            margin-top: 20px;
+            padding: 16px;
+            border: 1px solid #cccccc;
+            background: #f8f8f8;
+        }
+
+        .quote-box {
+            margin-top: 12px;
+            padding: 12px;
+            border-left: 4px solid #666666;
+            background: #ffffff;
+        }
+
+        .out-of-scope {
+            background: #fff0f0;
+            border: 1px solid #cc9999;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Policy Q&A</h1>
+
+    <p>
+        <a href="/">Back to Dashboard</a>
+    </p>
+
+    <form method="post">
+        <label>Ask a question about the policy library</label>
+        <br><br>
+
+        <textarea
+            name="question"
+            placeholder="Example: Is alcohol reimbursable on solo travel?"
+            required
+        >{{ question }}</textarea>
+
+        <br><br>
+
+        <button type="submit">
+            Ask
+        </button>
+    </form>
+
+    {% if result %}
+        {% if result.in_scope %}
+            <div class="answer-box">
+                <h2>Answer</h2>
+
+                <p>{{ result.answer }}</p>
+
+                <h3>Policy Support</h3>
+
+                {% for citation in result.citations %}
+                    <div class="quote-box">
+                        <strong>Source:</strong> {{ citation.source }}
+
+                        <p>
+                            "{{ citation.quote }}"
+                        </p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="answer-box out-of-scope">
+                <h2>Unable to Answer</h2>
+
+                <p>{{ result.answer }}</p>
+            </div>
+        {% endif %}
+    {% endif %}
+
+</body>
+</html>

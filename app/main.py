@@ -6,6 +6,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from app.seed_data import seed_employees
 from app.receipt import save_uploaded_receipt, analyze_receipt
+from app.policy import answer_policy_question
 
 from app.db import (
     init_db,
@@ -202,4 +203,30 @@ def override_receipt(
     return RedirectResponse(
         f"/submissions/{receipt['submission_id']}",
         status_code=303
+    )
+@app.get("/qa")
+def policy_qa_page(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="qa.html",
+        context={
+            "question": "",
+            "result": None
+        }
+    )
+
+@app.post("/qa")
+def policy_qa_answer(
+    request: Request,
+    question: str = Form(...)
+):
+    result = answer_policy_question(question)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="qa.html",
+        context={
+            "question": question,
+            "result": result
+        }
     )

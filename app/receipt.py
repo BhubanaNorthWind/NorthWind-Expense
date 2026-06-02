@@ -3,6 +3,7 @@ import shutil
 import uuid
 from pathlib import Path
 from typing import Optional, Dict, Any
+from app.policy import get_policy_support
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -224,6 +225,17 @@ def extract_vendor(text: str, file_path: Path) -> str:
 
     return file_path.stem.replace("_", " ").title()
 
+def has_keyword(text: str, keywords: list[str]) -> bool:
+    """
+    Safer keyword matching.
+    Prevents words like 'inn' matching inside 'dinner'.
+    """
+    for keyword in keywords:
+        pattern = r"(?<![a-z0-9])" + re.escape(keyword.lower()) + r"(?![a-z0-9])"
+        if re.search(pattern, text):
+            return True
+
+    return False
 
 def classify_category(text: str, file_path: Path) -> str:
     """
@@ -264,7 +276,6 @@ def classify_category(text: str, file_path: Path) -> str:
     hotel_keywords = [
         "hotel",
         "lodging",
-        "inn",
         "suite",
         "room",
         "night",
@@ -318,23 +329,23 @@ def classify_category(text: str, file_path: Path) -> str:
         "pizza",
     ]
 
-    if any(keyword in combined for keyword in alcohol_keywords):
+    if has_keyword(combined, alcohol_keywords):
         return "alcohol"
 
-    if any(keyword in combined for keyword in flight_keywords):
+    if has_keyword(combined, meal_keywords):
+        return "meal"
+
+    if has_keyword(combined, flight_keywords):
         return "air_travel"
 
-    if any(keyword in combined for keyword in hotel_keywords):
+    if has_keyword(combined, hotel_keywords):
         return "lodging"
 
-    if any(keyword in combined for keyword in ground_keywords):
+    if has_keyword(combined, ground_keywords):
         return "ground_transport"
 
-    if any(keyword in combined for keyword in conference_keywords):
+    if has_keyword(combined, conference_keywords):
         return "conference"
-
-    if any(keyword in combined for keyword in meal_keywords):
-        return "meal"
 
     return "unknown"
 
@@ -352,62 +363,77 @@ def make_verdict(
     """
     extension = file_path.suffix.lower()
     lowered_text = text.lower() if text else ""
+    def build_response(verdict, reason, confidence):
+        policy_support = get_policy_support(category, verdict)
+
+        if policy_support:
+            reason = (
+                f"{reason}\n\n"
+                f"Policy support from {policy_support['source']}:\n"
+                f"\"{policy_support['quote']}\""
+            )
+
+        return {
+            "verdict": verdict,
+            "reason": reason,
+            "confidence": confidence,
+        }
+
 
     if extension in {".jpg", ".jpeg", ".png"}:
-        return {
-            "verdict": "needs_human_review",
-            "reason": "Image receipt uploaded. OCR is not implemented in the minimum version, so a reviewer should verify it manually.",
-            "confidence": 0.25,
-        }
+        return build_response(
+            "needs_human_review",
+            "Image receipt uploaded. OCR is not implemented in the minimum version, so a reviewer should verify it manually.",
+            0.25
+        )
 
     if not text:
-        return {
-            "verdict": "needs_human_review",
-            "reason": "Could not extract readable text from this receipt.",
-            "confidence": 0.25,
-        }
+        return build_response(
+            "needs_human_review",
+            "Could not extract readable text from this receipt.",
+            0.25
+        )
 
     if amount is None:
-        return {
-            "verdict": "needs_human_review",
-            "reason": "Could not confidently extract the total amount from the receipt.",
-            "confidence": 0.40,
-        }
+        return build_response(
+            "needs_human_review",
+            "Could not confidently extract the total amount from the receipt.",
+            0.40
+        )
 
     if "first class" in lowered_text:
-        return {
-            "verdict": "rejected",
-            "reason": "Receipt appears to mention first class air travel, which should be reviewed against the air travel policy.",
-            "confidence": 0.80,
-        }
+        return build_response(
+            "rejected",
+            "Receipt appears to mention first class air travel.",
+            0.80
+        )
 
     if category == "alcohol":
-        return {
-            "verdict": "flagged",
-            "reason": "Alcohol-related expense detected. Reviewer should verify business context, attendees, and policy eligibility.",
-            "confidence": 0.75,
-        }
+        return build_response(
+            "flagged",
+            "Alcohol-related expense detected. Reviewer should verify business context, attendees, and policy eligibility.",
+            0.75
+        )
 
     if category == "meal" and amount > 75:
-        return {
-            "verdict": "flagged",
-            "reason": "Meal expense appears to exceed the standard dinner cap of $75. Reviewer should verify meal type, city tier, and client context.",
-            "confidence": 0.70,
-        }
+        return build_response(
+            "flagged",
+            "Meal expense appears to exceed the standard dinner cap of $75. Reviewer should verify meal type, city tier, and client context.",
+            0.70
+        )
 
     if category == "unknown":
-        return {
-            "verdict": "needs_human_review",
-            "reason": "Could not confidently classify the receipt category.",
-            "confidence": 0.45,
-        }
+        return build_response(
+            "needs_human_review",
+            "Could not confidently classify the receipt category.",
+            0.45
+        )
 
-    return {
-        "verdict": "compliant",
-        "reason": "No obvious issue detected by the minimum rule-based review.",
-        "confidence": 0.70,
-    }
-
+    return build_response(
+        "compliant",
+        "No obvious issue detected by the minimum rule-based review.",
+        0.70
+    )
 
 def analyze_receipt(file_path: str | Path) -> Dict[str, Any]:
     """

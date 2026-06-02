@@ -1,0 +1,34 @@
+{
+  "policy_qa": [
+    {
+      "question": "Is alcohol reimbursable on solo travel?",
+      "expected_in_scope": true,
+      "expected_terms": ["alcohol", "solo"],
+      "min_citations": 1
+    },
+    {
+      "question": "What is the dinner cap?",
+      "expected_in_scope": true,
+      "expected_terms": ["dinner", "75"],
+      "min_citations": 1
+    },
+    {
+      "question": "Is first class reimbursable?",
+      "expected_in_scope": true,
+      "expected_terms": ["first class", "not reimbursable"],
+      "min_citations": 1
+    },
+    {
+      "question": "How long should expense receipts be retained?",
+      "expected_in_scope": true,
+      "expected_terms": ["7 years", "receipts"],
+      "min_citations": 1
+    },
+    {
+      "question": "Who won the Super Bowl?",
+      "expected_in_scope": false,
+      "expected_terms": [],
+      "min_citations": 0
+    }
+  ]
+}

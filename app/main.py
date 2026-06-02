@@ -3,6 +3,7 @@ from app.db import init_db
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
+from app.seed_data import seed_employees
 
 from app.db import init_db, create_employee, get_all_employees
 
@@ -12,6 +13,7 @@ app = FastAPI(title="Northwind Expense Pre-Review")
 @app.on_event("startup")
 def startup():
     init_db()
+    seed_employees()
 
 
 templates = Jinja2Templates(directory="templates")
